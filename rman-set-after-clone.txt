@@ -1,0 +1,5 @@
+./rman_setup.sh
+cd JOHN
+cat level0.sh
+nohup level0.sh &
+

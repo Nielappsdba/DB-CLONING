@@ -1,0 +1,52 @@
+#!/bin/ksh
+
+restore_db()
+{
+echo "IN RESTORE_DB"
+rman auxiliary / <<-EOF
+run
+{
+allocate auxiliary channel t01 device type disk;
+allocate auxiliary channel t02 device type disk;
+allocate auxiliary channel t03 device type disk;
+allocate auxiliary channel t04 device type disk;
+allocate auxiliary channel t05 device type disk;
+allocate auxiliary channel t06 device type disk;
+allocate auxiliary channel t07 device type disk;
+allocate auxiliary channel t08 device type disk;
+allocate auxiliary channel t09 device type disk;
+allocate auxiliary channel t10 device type disk;
+allocate auxiliary channel t11 device type disk;
+allocate auxiliary channel t12 device type disk;
+allocate auxiliary channel t13 device type disk;
+allocate auxiliary channel t14 device type disk;
+allocate auxiliary channel t15 device type disk;
+allocate auxiliary channel t16 device type disk;
+duplicate target database to ADMS07 UNTIL TIME "TO_DATE('$RESTORE_DATE','mm-dd-yyyy hh24:mi:ss')"  backup location '/u02/BACKUP/RMAN/ADMS/' nofilenamecheck;
+release channel t01;
+release channel t02;
+release channel t03;
+release channel t04;
+release channel t05;
+release channel t06;
+release channel t07;
+release channel t08;
+release channel t09;
+release channel t10;
+release channel t11;
+release channel t12;
+release channel t13;
+release channel t14;
+release channel t15;
+release channel t16;
+}
+EOF
+}
+
+LOG=/tmp/RESTORE_DB.log
+rm -f $LOG
+
+RESTORE_DATE="04-19-2021 17:56:00"
+#echo "Restore started at [`date`] " > $LOG
+restore_db 
+#echo "Restore completed at [`date`] " > $LOG

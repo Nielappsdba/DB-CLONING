@@ -1,0 +1,24 @@
+Development Details:
+Server Name: UQ00342D
+Instances: ADMS02, ADMS05, ADMS07, ADMS08
+Oracle Home path: /c02/db/tech_st/12.1.0, /c05/db/tech_st/12.1.0, /c07/db/tech_st/12.1.0, /c08/db/tech_st/12.1.0
+Environment File: /c02/db/tech_st/12.1.0/ADMS02_uq00342d.env
+		   /c05/db/tech_st/12.1.0/ADMS05_uq00342d.env
+		  /c07/db/tech_st/12.1.0/ADMS07_uq00342d.env
+		 /c08/db/tech_st/12.1.0/ADMS08_uq00342d.env
+Data files, redo logs, temp files, etc: /c02/oradata/ADMS02, /c05/oradata/ADMS05, /c07/oradata/ADMS07, /c08/oradata/ADMS08
+
+
+Production Details:
+Server Name: UQ00392P
+Instances: ADMS
+Oracle Home path: /c00/db/tech_st/12.1.0
+Environment File: ADMS_uq00392p.env
+
+RMAN Scripts in Production:
+Main script called by RMJ: /ABBOTT/jobs/PSY/PSY10999
+This in turn calls /ABBOTT/jobs/ORA/PORA0999
+This calls the script /ABBOTT/control/rmandaily.rcv
+Log locations for RMAN: /ABBOTT/joblogs/ORA/PORA0999.<date>.<time>
+Data files, redo logs, temp files, etc: /c00/oradata/ADMS
+

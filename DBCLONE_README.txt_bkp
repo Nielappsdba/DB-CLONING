@@ -1,0 +1,465 @@
+#####################################################################
+#STEP FOR APPLICATION CLONNING.
+#####################################################################
+
+Three Phase for Database & Application Clonning
+
+Phase :1  Take  Backup of ORACLE_HOME & APPLICATION HOME
+
+1: Take Backup of ORACLE_HOME
+On Production Server uq00392p
+login as oracle user.
+cd /home/oracle/JOHN
+./1_taroh_for_clone.sh
+
+2: Login as applmgr@uq00392p
+cd /home/applmgr
+./2_tar_appoh_for_clone.sh
+
+Please Exist from Production Server. 
+
+====================================================================================================================
+PHASE :2 DATABASE TIER CLONING.
+
+login on Server uq00342d as User oracle
+Take Backup of Spfile,tns.ora,listenere.ora,context file
+cd /home/oracle/ADMS02
+3 ./3_backup_ora_bef_ref_02.sh
+
+On Server uq00342d as applmgr please run below script to take backup of context file.
+./3_backup_context_bef_ref_02.sh
+
+on Server cuz103567d as applmgr please run below script to take backup of context file.
+./3_backup_cont_before_ref.sh
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Shut Down the Application Server & Mobile Service.
+
+On App server cuz103567d login as applmgr
+
+
+cd /home/applmgr/ADMS02/CLONE
+4 ./4_shut_app_onapp_server_for_ref.sh
+
+On App server cuz103567d login as applmgr & shut down Mobile Server.
+cd /home/applmgr  
+5 ./MWA_STOP.sh
+
+Check Status 
+ps -ef|grep -i c02 | grep applmgr | grep -v grep
+ps -ef|grep mwa | grep -i c02 
+
+Note: Please COnfirm All process should be down for ADMS02 Instance.
+
+On DB Server uq00342d Login as applmgr and shut down the application
+cd /home/applmgr/ADMS02
+6 ./6_shut_app_ondb_server_for_ref.sh
+
+ps -ef|grep -i c02 | grep applmgr | grep -v grep
+
+NOTE: Please wait for some time, application process take some time for complete shut down.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+On DB Server uq00342d Login as oracle id and shut down the Database.
+cd /home/oracle/ADMS02
+7 ./7_shut_db_on_DB_server_for_ref.sh
+
+Drop Database for refresh.
+cd /home/oracle/ADMS02
+8 ./8_drop_db_for_clone_for_ref.sh 
+
+Startup Database in NoMount.
+9  ./9_start_db_nomount_for_ref.sh
+
+
+Before execute this command please add db_file_name_convert & log_file_name_convert
+*.db_file_name_convert='/c00/oradata/ADMS','/c02/oradata/ADMS02'
+*.log_file_name_convert='/c00/oradata/ADMS','/c02/oradata/ADMS02'
+
+Restore Database using 
+10 ./10_restore_db_ADMS02.sh
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+TYPICALLY DB RESTORE TAKE 4-5 Hours , SO DURING THAT TIME  YOu CAN COPIED PRODUCTION
+ORACLE_HOME & APPLICATION_HOME.
+
+LOGIN ON SERVER uq00342d as ORACLE user.
+cd /home/oracle/ADMS02
+ftptaroh_for_clone.sh 
+
+LOGIN ON SERVER uq00342d as applmgr users.
+cd /home/applmgr/ADMS02
+./ftpappoh_for_clone.sh
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+After Restore Add temp tablespace.
+11 ./11_after_rest_add_temp_file.sh ====> No need in our Case. Temp file already created.
+for conformation please login to Database and use ==> select FILE_NAME ,TABLESPACE_NAME from dba_temp_files;
+
+
+Shut Down Database.
+12 ./12_after_rest_do_sanity_check.sh
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Now Remove the ORACLE_HOME ,Login on uq00342d as oracle user.
+13 ./13_remove_oh_for_clone_aft_ref.sh
+
+Untar the production Database ORACLE_HOME on Dev Server.
+14 ./14_untaroh_after_ref.sh
+
+Copy the Listener,ORA to New Home
+15 ./15_copy_tns_list_ora_file_tooh_after_ref.sh
+
+Startup Database with New Home.Manually with pfile 
+16 ./16_startup_db_after_tar_new_home.sh===> DOnt use this Script 
+
+sqlplus -s / as sysdba
+startup nomount pfile="/c02/db/tech_st/12.1.0/dbs/initADMS02.ora";
+create spfile from pfile;
+shut immediate
+startup
+
+lsnrctl stop ADMS02
+lsnrctl start ADMS02
+
+NOTE:-ORA-07446: sdnfy: bad value '/c02/db/tech_st/diag/rdbms/adms02/ADMS02/trace'==> To avoid this error please use
+above steps.
+
+
+
+18 Configure the Oracle Home and Context file
+export ORACLE_BASE=/c02/db/tech_st
+export ORACLE_HOME=/c02/db/tech_st/12.1.0
+export LD_LIBRARY_PATH=/c02/db/tech_st/12.1.0/lib
+export PERL5LIB=/c02/db/tech_st/12.1.0/perl/lib
+export PATH=/c02/db/tech_st/12.1.0/perl/bin:$PATH
+export PATH=/c02/db/tech_st/12.1.0/bin:$PATH
+/c02/db/tech_st/12.1.0/perl/bin/perl /c02/db/tech_st/12.1.0/nls/data/old/cr9idata.pl
+export ORA_NLS10=/c02/db/tech_st/12.1.0/nls/data/9idata
+export PATH=/c02/db/tech_st/12.1.0/OPatch:$PATH
+cd /c02/db/tech_st/12.1.0/appsutil/bin/
+echo $ORACLE_SID
+perl adbldxml.pl appsuser=apps
+
+####################################################################################
+# Use this answer when you run above command ==>perl adbldxml.pl appsuser=apps
+Enter Hostname of Database server: uq00342d3
+Enter Port of Database server: 1523
+Enter SID of Database server: ADMS02
+Enter the value for Display Variable: uq00342d:0.0
+#######################################################################################
+
+cd /c02/db/tech_st/12.1.0/appsutil/bin
+sh adconfig.sh	-- Enter the full path of Context file from the previous step
+Clear the fnd_nodes table and Run autoconfig
+sqlplus apps/apps
+select node_name from fnd_nodes;
+exec fnd_conc_clone.setup_clean;
+exit
+run autoconfig
+cd /c02/db/tech_st/12.1.0/appsutil/scripts/ADMS02_uq00342d
+sh adautocfg.sh 	-- Enter the apps password when prompted
+
+
+login as aplmgr on Server uq00342d ADMS07
+. /c07/apps/apps_st/appl/APPSADMS07_uq00342d.env
+[applmgr@uq00342d ADMS07]$ cd $ADMIN_SCRIPTS_HOME
+[applmgr@uq00342d scripts]$ sh adautocfg.sh
+
+login as aplmgr on Server cuz103567d
+
+. /c07/apps/apps_st/appl/APPSADMS07_cuz103567d.env
+[applmgr@cuz103567d CLONE]$ cd $ADMIN_SCRIPTS_HOME
+[applmgr@cuz103567d scripts]$ sh adautocfg.sh
+
+
+
+Step 19.
+As the last step, shutdown and bring up the database and listener, both
+
+==========================================================================================
+PHASE 3: APPLICATION TIER CLONING.
+
+20  Login as applmgr on uq00342d
+cd /home/applmgr/ADMS02
+./17_after_db_refresh_remove_applho.sh
+
+
+21 Untar the production Database ORACLE_APPS_HOME on Dev Server.
+21_untar_appoh_after_ref.sh
+
+22.cd /c02/apps/apps_st/comn/clone/bin
+run this command ==>perl adcfgclone.pl appsTier
+==========================================================================================================================
+[applmgr@uq00342d bin]$ perl adcfgclone.pl appsTier
+
+
+
+                     Copyright (c) 2002 Oracle Corporation
+                        Redwood Shores, California, USA
+
+                        Oracle Applications Rapid Clone
+
+                                 Version 12.0.0
+
+                      adcfgclone Version 120.31.12010000.8
+
+Enter the APPS password :
+
+Running:
+/c02/apps/apps_st/comn/clone/bin/../jre/bin/java -Xmx600M -cp /c02/apps/apps_st/comn/clone/jlib/java:/c02/apps/apps_st/comn/clone/jlib/xmlparserv2.jar:/c02/apps/apps_st/comn/clone/jlib/ojdbc14.jar oracle.apps.ad.context.CloneContext -e /c02/apps/apps_st/comn/clone/bin/../context/apps/CTXORIG.xml -validate -pairsfile /tmp/adpairsfile_19584.lst -stage /c02/apps/apps_st/comn/clone  2> /tmp/adcfgclone_19584.err; echo $? > /tmp/adcfgclone_19584.res
+
+Log file located at /c02/apps/apps_st/comn/clone/bin/CloneContext_0408141754.log
+
+Provide the values required for creation of the new APPL_TOP Context file.
+
+Target System Hostname (virtual or normal) [uq00342d] :
+
+Target System Database SID : ADMS02
+
+Target System Database Server Node [uq00342d] :
+
+Target System Database Domain Name [oneabbott.com] :
+
+Target System Base Directory : /c02
+
+Target System Tools ORACLE_HOME Directory [/c02/apps/tech_st/10.1.2] :
+
+Target System Web ORACLE_HOME Directory [/c02/apps/tech_st/10.1.3] :
+
+Target System APPL_TOP Directory [/c02/apps/apps_st/appl] :
+
+Target System COMMON_TOP Directory [/c02/apps/apps_st/comn] :
+
+Target System Instance Home Directory [/c02/inst] :
+
+Target System Root Service [disabled] :
+
+Target System Web Entry Point Services [disabled] :
+
+Target System Web Application Services [disabled] :
+
+Target System Batch Processing Services [enabled] :
+
+Target System Other Services [enabled] : disabled
+
+Do you want to preserve the Display [dalol021:0.0] (y/n)  : n
+
+Target System Display [uq00342d:0.0] :
+
+Do you want the the target system to have the same port values as the source system (y/n) [y] ? : n
+
+Target System Port Pool [0-99] : 2
+
+Checking the port pool 2
+RC-50221: Warning: Port Pool 2 is not free. Please check logfile /c02/apps/apps_st/comn/clone/bin/CloneContext_0408141754.log for conflicts.
+
+Target System Port Pool [0-99] : ^C=====> Here we got error , 
+======================================================================================================================
+So to Resolve this issue , Please do below steps.
+check this log /c02/apps/apps_st/comn/clone/bin/CloneContext_0408141754.log
+
+RC-50204: Error: - OC4J RMI Port Range for Forms-c4ws in use: Port Value = 27514===> for this port we got issue
+so we checked who accesssing this Port using lsof command.
+
+
+So please cancel this command. & use the Backup context file of the location
+cd /home/applmgr/ADMS02
+cp ADMS02_uq00342d.xml ADMS02_uq00342d.xml_bkp
+
+<forms-c4ws_rmi_portrange oa_var="s_forms-c4ws_rmi_portrange" oa_type="PORT" base="27500" step="5" 
+range="5" label="OC4J RMI Port Range for Forms-c4ws">27515-27519</forms-c4ws_rmi_portrange> ----> use this range & in
+cloning Video Amrita did change the Value.
+
+
+
+To check the Port use command
+lsof -i TCP:27514
+
+Look for LISTENE
+java    44001 applmgr   23u  IPv6 72062152      0t0  TCP uq00342d.oneabbott.com:27514 (LISTEN)
+
+ps -ef|grep 44001 ===> You will get who accessing the process.
+
+=======================================================================================================================
+
+Solution for Above issue
+
+[applmgr@uq00342d bin]$ pwd
+/c02/apps/apps_st/comn/clone/bin
+[applmgr@uq00342d bin]$ perl adcfgclone.pl appsTier /home/applmgr/ADMS02/ADMS02_uq00342d.xml
+
+                     Copyright (c) 2002 Oracle Corporation
+                        Redwood Shores, California, USA
+
+                        Oracle Applications Rapid Clone
+
+                                 Version 12.0.0
+
+                      adcfgclone Version 120.31.12010000.8
+
+Enter the APPS password :
+
+
+Running Rapid Clone with command:
+perl /c02/apps/apps_st/comn/clone/bin/adclone.pl java=/c02/apps/apps_st/comn/clone/bin/../jre mode=apply stage=/c02/apps/apps_st/comn/clone component=appsTier method=CUSTOM appctxtg=/home/applmgr/ADMS02/ADMS02_uq00342d.xml showProgress contextValidated=false
+Running:
+perl /c02/apps/apps_st/comn/clone/bin/adclone.pl java=/c02/apps/apps_st/comn/clone/bin/../jre mode=apply stage=/c02/apps/apps_st/comn/clone component=appsTier method=CUSTOM appctxtg=/home/applmgr/ADMS02/ADMS02_uq00342d.xml showProgress contextValidated=false
+APPS Password :
+
+Beginning application tier Apply - Thu Apr  8 09:56:45 2021
+
+/c02/apps/apps_st/comn/clone/bin/../jre/bin/java -Xmx600M -DCONTEXT_VALIDATED=false  -Doracle.installer.oui_loc=/oui -classpath /c02/apps/apps_st/comn/clone/jlib/xmlparserv2.jar:/c02/apps/apps_st/comn/clone/jlib/ojdbc14.jar:/c02/apps/apps_st/comn/clone/jlib/java:/c02/apps/apps_st/comn/clone/jlib/oui/OraInstaller.jar:/c02/apps/apps_st/comn/clone/jlib/oui/ewt3.jar:/c02/apps/apps_st/comn/clone/jlib/oui/share.jar:/c02/apps/apps_st/comn/clone/jlib/oui/srvm.jar:/c02/apps/apps_st/comn/clone/jlib/ojmisc.jar  oracle.apps.ad.clone.ApplyAppsTier -e /home/applmgr/ADMS02/ADMS02_uq00342d.xml -stage /c02/apps/apps_st/comn/clone    -showProgress
+APPS Password : Log file located at /c02/inst/apps/ADMS02_uq00342d/admin/log/ApplyAppsTier_04081456.log
+  |      0% completed
+Log file located at /c02/inst/apps/ADMS02_uq00342d/admin/log/ApplyAppsTier_04081456.log
+  -     79% completed
+
+Completed Apply...
+Thu Apr  8 09:59:51 2021
+
+
+Do you want to startup the Application Services for ADMS02? (y/n) [y] : n
+
+Services not started
+
+
+
+=========================================================================================================================
+LOGIN ON SERVER cuz103567d as applmgr and remove apps from location ==>/c02/inst/apps
+
+cd /home/applmgr/ADMS02/CLONE
+./rem_application_file.sh
+
+Start the adcfgclone
+
+cd /c02/apps/apps_st/comn/clone/bin
+perl adcfgclone.pl appsTier
+
+[applmgr@cuz103567d CLONE]$ cd /c02/apps/apps_st/comn/clone/bin
+[applmgr@cuz103567d bin]$ perl adcfgclone.pl appsTier
+
+                     Copyright (c) 2002 Oracle Corporation
+                        Redwood Shores, California, USA
+
+                        Oracle Applications Rapid Clone
+
+                                 Version 12.0.0
+
+                      adcfgclone Version 120.31.12010000.8
+
+Enter the APPS password :
+
+Running:
+/c02/apps/apps_st/comn/clone/bin/../jre/bin/java -Xmx600M -cp /c02/apps/apps_st/comn/clone/jlib/java:/c02/apps/apps_st/comn/clone/jlib/xmlparserv2.jar:/c02/apps/apps_st/comn/clone/jlib/ojdbc14.jar oracle.apps.ad.context.CloneContext -e /c02/apps/apps_st/comn/clone/bin/../context/apps/CTXORIG.xml -validate -pairsfile /tmp/adpairsfile_23248.lst -stage /c02/apps/apps_st/comn/clone  2> /tmp/adcfgclone_23248.err; echo $? > /tmp/adcfgclone_23248.res
+
+Log file located at /c02/apps/apps_st/comn/clone/bin/CloneContext_0408102218.log
+
+Provide the values required for creation of the new APPL_TOP Context file.
+
+Target System Hostname (virtual or normal) [cuz103567d] :
+
+Target System Database SID : ADMS02
+
+Target System Database Server Node [cuz103567d] : uq00342d
+
+Target System Database Domain Name [oneabbott.com] :
+
+Target System Base Directory : /c02
+
+Target System Tools ORACLE_HOME Directory [/c02/apps/tech_st/10.1.2] :
+
+Target System Web ORACLE_HOME Directory [/c02/apps/tech_st/10.1.3] :
+
+Target System APPL_TOP Directory [/c02/apps/apps_st/appl] :
+
+Target System COMMON_TOP Directory [/c02/apps/apps_st/comn] :
+
+Target System Instance Home Directory [/c02/inst] :
+
+Target System Root Service [disabled] :
+
+Target System Web Entry Point Services [disabled] : enabled
+
+Target System Web Application Services [disabled] : enabled
+
+Target System Batch Processing Services [enabled] : disabled
+
+Target System Other Services [enabled] : disabled
+
+Do you want to preserve the Display [dalol021:0.0] (y/n)  : n
+
+Target System Display [cuz103567d:0.0] :
+
+Do you want the the target system to have the same port values as the source system (y/n) [y] ? : n
+
+Target System Port Pool [0-99] : 2
+
+Checking the port pool 2
+done: Port Pool 2 is free
+Report file located at /c02/inst/apps/ADMS02_cuz103567d/admin/out/portpool.lst
+Complete port information available at /c02/inst/apps/ADMS02_cuz103567d/admin/out/portpool.lst
+
+UTL_FILE_DIR on database tier consists of the following directories.
+
+1. /usr/tmp
+2. /c02/db/tech_st/12.1.0/appsutil/outbound/ADMS02_uq00342d
+3. /c02/inst/apps/ADMS02_uq00342d/applptmp
+4. /c02/inst/apps/ADMS02_cuz103567d/appltmp
+5. /transfer/loftware
+6. /TRANSFER/edi/out
+7. *
+Choose a value which will be set as APPLPTMP value on the target node [1] :
+
+Creating the new APPL_TOP Context file from :
+  /c02/apps/apps_st/appl/ad/12.0.0/admin/template/custom/adxmlctx.tmp
+
+The new APPL_TOP context file has been created :
+  /c02/inst/apps/ADMS02_cuz103567d/appl/admin/ADMS02_cuz103567d.xml
+
+Log file located at /c02/apps/apps_st/comn/clone/bin/CloneContext_0408102218.log
+Check Clone Context logfile /c02/apps/apps_st/comn/clone/bin/CloneContext_0408102218.log for details.
+
+Running Rapid Clone with command:
+perl /c02/apps/apps_st/comn/clone/bin/adclone.pl java=/c02/apps/apps_st/comn/clone/bin/../jre mode=apply stage=/c02/apps/apps_st/comn/clone component=appsTier method=CUSTOM appctxtg=/c02/inst/apps/ADMS02_cuz103567d/appl/admin/ADMS02_cuz103567d.xml showProgress contextValidated=true
+Running:
+perl /c02/apps/apps_st/comn/clone/bin/adclone.pl java=/c02/apps/apps_st/comn/clone/bin/../jre mode=apply stage=/c02/apps/apps_st/comn/clone component=appsTier method=CUSTOM appctxtg=/c02/inst/apps/ADMS02_cuz103567d/appl/admin/ADMS02_cuz103567d.xml showProgress contextValidated=true
+APPS Password :
+
+Beginning application tier Apply - Thu Apr  8 10:26:04 2021
+
+/c02/apps/apps_st/comn/clone/bin/../jre/bin/java -Xmx600M -DCONTEXT_VALIDATED=true  -Doracle.installer.oui_loc=/oui -classpath /c02/apps/apps_st/comn/clone/jlib/xmlparserv2.jar:/c02/apps/apps_st/comn/clone/jlib/ojdbc14.jar:/c02/apps/apps_st/comn/clone/jlib/java:/c02/apps/apps_st/comn/clone/jlib/oui/OraInstaller.jar:/c02/apps/apps_st/comn/clone/jlib/oui/ewt3.jar:/c02/apps/apps_st/comn/clone/jlib/oui/share.jar:/c02/apps/apps_st/comn/clone/jlib/oui/srvm.jar:/c02/apps/apps_st/comn/clone/jlib/ojmisc.jar  oracle.apps.ad.clone.ApplyAppsTier -e /c02/inst/apps/ADMS02_cuz103567d/appl/admin/ADMS02_cuz103567d.xml -stage /c02/apps/apps_st/comn/clone    -showProgress
+APPS Password : Log file located at /c02/inst/apps/ADMS02_cuz103567d/admin/log/ApplyAppsTier_04081026.log
+
+
+At Last step Say No to start the application.
+Do you want to startup the Application Services for ADMS02? (y/n) [y] : n
+
+
+========================================================================================================================
+
+PHASE 4: POST CLONING ACTIVITY.
+
+Now Login to Database Server
+
+Run the below query by logging in the ADMS02 database as apps user
+sqlplus apps/apps
+update fnd_concurrent_requests set phase_code='C',status_code='D' where phase_code in ('I','P');
+commit;
+
+Bring up the application services on both servers
+
+cd /c02/apps/apps_st/appl
+
+[applmgr@cuz103567d appl]$ chmod 777 APPSADMS02_cuz103567d.env
+[applmgr@cuz103567d appl]$ . ./APPSADMS02_cuz103567d.env
+[applmgr@cuz103567d appl]$ echo $TWO_TASK
+ADMS02
+
+
+Change the profile options of .Site. to ADMS02 (currently it would show as ADMS)
+Change the home page (FWK_HOMEPAGE) name to ADMS02 

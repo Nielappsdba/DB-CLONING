@@ -1,0 +1,7 @@
+On server login as applmgr cuz103567d under ===>/home/applmgr/ADMS02/CLONE
+
+user the Script to shut down the application 
+
+4_shut_app_onapp_server_for_ref.sh
+
+Please execute one by one, Dont Run in parallel.

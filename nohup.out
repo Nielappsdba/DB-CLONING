@@ -1,0 +1,17 @@
+./10_restore_db_ADMS08.sh: line 3: export: `hh24:mi:ss': not a valid identifier
+
+Recovery Manager: Release 12.1.0.2.0 - Production on Thu Dec 2 17:52:35 2021
+
+Copyright (c) 1982, 2014, Oracle and/or its affiliates.  All rights reserved.
+
+connected to auxiliary database: ADMS08 (not mounted)
+
+RMAN> RMAN> 2> 3> 4> 5> 6> 7> 8> 9> 10> 11> 12> 13> 14> 15> 16> 17> 18> 19> 20> 21> 22> 23> 24> 25> 26> 27> 28> 29> 30> 31> 32> 33> 34> 35> 36> RMAN> ./10_restore_db_ADMS08.sh: line 3: export: `hh24:mi:ss': not a valid identifier
+
+Recovery Manager: Release 12.1.0.2.0 - Production on Fri Jan 21 18:14:42 2022
+
+Copyright (c) 1982, 2014, Oracle and/or its affiliates.  All rights reserved.
+
+connected to auxiliary database: ADMS08 (not mounted)
+
+RMAN> RMAN> 2> 3> 4> 5> 6> 7> 8> 9> 10> 11> 12> 13> 14> 15> 16> 17> 18> 19> 20> 21> 22> 23> 24> 25> 26> 27> 28> 29> 30> 31> 32> 33> 34> 35> 36> RMAN> 

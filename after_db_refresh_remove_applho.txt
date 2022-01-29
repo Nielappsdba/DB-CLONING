@@ -1,0 +1,2 @@
+login  applmgr on Server uq00342d  and under /home/applmgr/ADMS02==> use this script to delete the directory.
+11_after_db_refresh_remove_applho.sh

@@ -1,0 +1,6 @@
+On server login as applmgr cuz103567d under ===>/home/applmgr/ADMS02/CLONE
+
+user the Script to shut down Mobile process
+
+5_shut_mobile_service_on_app_server_for_ref.sh
+
